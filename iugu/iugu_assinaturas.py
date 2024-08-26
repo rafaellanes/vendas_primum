@@ -86,7 +86,24 @@ for b in base:
         data_1 = '1900-01-01'
         data = data_1
 
-    print(f"{id} com data de atualização no dia {data}. Suspenso = {suspenso} ------------- ativo = {ativo}")
+    insert_query_log = """
+        INSERT INTO log_assinaturas (
+        "ID_ASSINATURA"
+        ,"STATU"
+        ,"DATA_ATUALIZACAO"
+        
+    ) VALUES (%s,%s,%s)
+    """
+
+    dados = (
+        id
+        ,ativo
+        ,data
+    )
+    cur.execute(insert_query_log,dados)
+    
+    conect.commit()
+    print(f"{id} com data de atualização no dia {data}.")
 
 
 conect.close()
