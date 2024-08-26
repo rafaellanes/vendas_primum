@@ -11,38 +11,43 @@ load_dotenv()
 
 DB_USER     = os.getenv('DB_USER')
 DB_HOST     = os.getenv('DB_HOST')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_PASSWORD = os.getenv('DB_PASSOWORD')
 DB_TABLE    = os.getenv('DB_TABLE')
 TOKEN       = os.getenv('TOKEN')
 
-# Função para conectar no banco de dados
-def conectando_bd(DB_TABLE,DB_USER,DB_PASSWORD,DB_HOST):
+def conectando_bd(database,username,password):
+# Conectando ao banco de dados
     conn = psycopg2.connect(
-        dbname=DB_TABLE,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST
+        dbname=database,
+        user=username,
+        password=password,
+        host="34.29.110.105"
     )
 
     # Criando um cursor
 
     return conn
 
-def make_request_sub_info(id,token):
+def make_request_sub_info(token,id):
     url = f"https://api.iugu.com/v1/subscriptions/{id}?api_token={token}"
-    headers = {
-        'Content-Type': 'application/json',
-    }
+    headers = {"accept": "application/json"}
+
     response = requests.get(url, headers=headers)
     response_json = json.loads(response.text)
     return response_json
 
-conect  = conectando_bd(DB_TABLE,DB_USER,DB_PASSWORD)
-cur     = conect.cursor()
+# Credencias Banco de Dados
+database='iugu'
+username='rafael.lanes'
+password='"ZMvekst|aIMrY@J'
 
-token   = TOKEN
+# Banco de Dados (POSTGREESQL)
 
-query   = """
+conect = conectando_bd(database,username,password)
+cur = conect.cursor()
+
+# Consulta sql para pegar quais assinaturas precisa atualizar
+query = """
     SELECT
         "ID_ASSINATURA"
         ,"STATUS_ASSINATURA"
@@ -52,47 +57,37 @@ query   = """
 
     """
 
+# Executar Consulta
+
 cur.execute(query)
 
 base = cur.fetchall()
+token = TOKEN
 for b in base:
     id = b[0]
     status = b[1]
-    
+
     dados = make_request_sub_info(token,id)
-    
+
     try:
-        data_atualizacao = dados['updated_at']
-        data_atualizacao_obj = datetime.datetime.strptime(data_atualizacao, '%Y-%m-%dT%H:%M:%S%z')
-        data = data_atualizacao_obj.strftime('%Y-%m-%d')
+        suspenso                = dados['suspended']
+    except:
+        suspenso = None
+    try:
+        ativo                   = dados['active']
+    except:
+        ativo = None
+        
+    try:
+        data_atualizacao        = dados['updated_at']
+        data_atualizacao_obj    = datetime.datetime.strptime(data_atualizacao, '%Y-%m-%dT%H:%M:%S%z')
+        data                    = data_atualizacao_obj
     except:
         data_1 = '1900-01-01'
         data = data_1
-    data_atual = date.today()
-    data_hoje = data_atual.strftime('%Y-%m-%d') 
-    
 
-    
-    insert_query_log = """
-        INSERT INTO log_assinaturas (
-        "ID_ASSINATURA"
-        ,"STATUSANT"
-        ,"DATA_ATUALIZACAO"
-        ,"DATA_ATUALIZACAO_SITE"
-    ) VALUES (%s,%s,%s,%s)
-    """
-
-    dados = (
-        id
-        ,status
-        ,data_hoje
-        ,data
-    )
-    cur.execute(insert_query_log,dados)
-    
-    conect.commit()
-
-    print(id)
+    print(f"{id} com data de atualização no dia {data}. Suspenso = {suspenso} ------------- ativo = {ativo}")
 
 
+conect.close()
 
