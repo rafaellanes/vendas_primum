@@ -49,12 +49,15 @@ cur = conect.cursor()
 # Consulta sql para pegar quais assinaturas precisa atualizar
 query = """
     SELECT
-        "ID_ASSINATURA"
+        rc."ID_ASSINATURA"
         ,"STATUS_ASSINATURA"
     FROM receita_contratada AS rc
 
-    WHERE rc."PLATAFORMA_VENDA" = 'iugu'
+    LEFT JOIN log_assinaturas_iugu as temp
+        ON temp."ID_ASSINATURA" = rc."ID_ASSINATURA"
 
+    WHERE rc."PLATAFORMA_VENDA" = 'iugu'
+        AND temp."ID_ASSINATURA" IS NULL
     """
 
 # Executar Consulta
@@ -87,9 +90,9 @@ for b in base:
         data = data_1
 
     insert_query_log = """
-        INSERT INTO log_assinaturas (
+        INSERT INTO log_assinaturas_iugu (
         "ID_ASSINATURA"
-        ,"STATU"
+        ,"STATUS"
         ,"DATA_ATUALIZACAO"
         
     ) VALUES (%s,%s,%s)
